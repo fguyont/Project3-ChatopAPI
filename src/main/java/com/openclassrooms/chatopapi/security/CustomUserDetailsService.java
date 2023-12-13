@@ -29,7 +29,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
 
         User user = userRepository.findByEmail(usernameOrEmail)
-                .orElseThrow(() -> new UsernameNotFoundException("User not exists by Username or Email"));
+                .orElseThrow(() -> new UsernameNotFoundException("User does not exist by Username or Email"));
         
         List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
 
