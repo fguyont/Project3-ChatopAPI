@@ -8,6 +8,7 @@ import com.openclassrooms.chatopapi.security.JwtTokenProvider;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,82 +22,94 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.security.auth.login.CredentialException;
+
 @Service
 public class AuthServiceImpl implements AuthService {
 
 	@Autowired
-    private AuthenticationManager authenticationManager;
+	private AuthenticationManager authenticationManager;
 	@Autowired
-    private UserRepository userRepository;
+	private UserRepository userRepository;
 	@Autowired
-    private PasswordEncoder passwordEncoder;
+	private PasswordEncoder passwordEncoder;
 	@Autowired
-    private JwtTokenProvider jwtTokenProvider;
-    
-    @Autowired
-    private ModelMapper modelMapper;
+	private JwtTokenProvider jwtTokenProvider;
 
+	@Autowired
+	private ModelMapper modelMapper;
 
-    public AuthServiceImpl(
-            JwtTokenProvider jwtTokenProvider,
-            UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            AuthenticationManager authenticationManager) {
-        this.authenticationManager = authenticationManager;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtTokenProvider = jwtTokenProvider;
-    }
-    
-    @Autowired
+	public AuthServiceImpl(JwtTokenProvider jwtTokenProvider, UserRepository userRepository,
+			PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
+		this.authenticationManager = authenticationManager;
+		this.userRepository = userRepository;
+		this.passwordEncoder = passwordEncoder;
+		this.jwtTokenProvider = jwtTokenProvider;
+	}
+
+	@Autowired
 	public BCryptPasswordEncoder bCryptPasswordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
 
-    @Override
-    public String login(LoginRequest loginRequest) {
-    	
+	@Override
+	public String login(LoginRequest loginRequest) {
 
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                loginRequest.getEmail(), loginRequest.getPassword()));
+		if (!loginRequest.getEmail().contains("@") || loginRequest.getPassword().length() < 3) {
+			throw new IllegalArgumentException("Invalid input");
+		}
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+		if (userRepository.existsByEmail(loginRequest.getEmail()) == false) {
+			throw new IllegalArgumentException("User email not found");
+		}
+		return authenticate(loginRequest);
+	}
 
-        String token = jwtTokenProvider.generateToken(authentication);
+	@Override
+	public String register(RegisterRequest registerRequest) {
 
-        return token;
-    }
-    
-    @Override
-    public String register(RegisterRequest registerRequest) {
-    	
-    	User user = modelMapper.map(registerRequest, User.class);
-    	user.setPassword(bCryptPasswordEncoder().encode(user.getPassword()));
-    	user.setCreated_at(LocalDateTime.now());
-    	user.setUpdated_at(LocalDateTime.now());
-    	
-    	userRepository.save(user);
-    	
-    	Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                user.getEmail(), user.getPassword()));
+		if (registerRequest.getName().length() < 3 || !registerRequest.getEmail().contains("@")
+				|| registerRequest.getPassword().length() < 3) {
+			throw new IllegalArgumentException("Invalid input");
+		}
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+		if (userRepository.existsByEmail(registerRequest.getEmail()) == true) {
+			throw new IllegalArgumentException("Email already exists");
+		}
 
-        String token = jwtTokenProvider.generateToken(authentication);
+		User user = modelMapper.map(registerRequest, User.class);
+		user.setPassword(bCryptPasswordEncoder().encode(user.getPassword()));
+		user.setCreated_at(LocalDateTime.now());
+		user.setUpdated_at(LocalDateTime.now());
 
-        return token;
-    }
-    
-    @Override
+		userRepository.save(user);
+
+		LoginRequest loginRequest = new LoginRequest(registerRequest.getEmail(), registerRequest.getPassword());
+		return authenticate(loginRequest);
+	}
+
+	@Override
 	public Optional<User> getMe() {
-    	String name = SecurityContextHolder.getContext().getAuthentication().getName();
-    	
-    	Optional<User> user = userRepository.findByEmail(name);
-    	
-    	if (user.isPresent()) {
-    		return user;
-    	}
-    	return null;
-    	
-    }
+		String name = SecurityContextHolder.getContext().getAuthentication().getName();
+
+		Optional<User> user = userRepository.findByEmail(name);
+
+		if (user.isPresent()) {
+			return user;
+		}
+		return null;
+	}
+
+	private String authenticate(LoginRequest loginRequest) {
+		Authentication authentication;
+		try {
+			authentication = authenticationManager.authenticate(
+					new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+		} catch (AuthenticationCredentialsNotFoundException ex) {
+			throw new AuthenticationCredentialsNotFoundException("Authentication not permitted");
+		}
+		SecurityContextHolder.getContext().setAuthentication(authentication);
+		String token = jwtTokenProvider.generateToken(authentication);
+		return token;
+	}
 }
