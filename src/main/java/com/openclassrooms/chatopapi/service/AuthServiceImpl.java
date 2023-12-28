@@ -28,8 +28,6 @@ public class AuthServiceImpl implements AuthService {
 	@Autowired
 	private UserRepository userRepository;
 	@Autowired
-	private PasswordEncoder passwordEncoder;
-	@Autowired
 	private JwtTokenProvider jwtTokenProvider;
 
 	@Autowired
@@ -39,7 +37,6 @@ public class AuthServiceImpl implements AuthService {
 			PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
 		this.authenticationManager = authenticationManager;
 		this.userRepository = userRepository;
-		this.passwordEncoder = passwordEncoder;
 		this.jwtTokenProvider = jwtTokenProvider;
 	}
 
