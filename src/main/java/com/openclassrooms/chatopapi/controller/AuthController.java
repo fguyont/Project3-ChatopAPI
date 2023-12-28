@@ -60,7 +60,7 @@ public class AuthController {
 		return ResponseEntity.ok(authSuccess);
 	}
 
-	@Operation(summary = "Registers a user")
+	@Operation(summary = "Registers a new user")
 	@ApiResponse(responseCode = "200", description = "User is created and logged")
 	@ApiResponse(responseCode = "400", description = "Invalid input or already existing email")
 	@ApiResponse(responseCode = "503", description = "Service unavailable")
