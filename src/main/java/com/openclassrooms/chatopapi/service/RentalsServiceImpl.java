@@ -39,6 +39,7 @@ public class RentalsServiceImpl implements RentalsService {
 	
 	@Override
 	public void createRental(Rental createdRental) {
+		createdRental.setCreated_at(LocalDateTime.now());
 		rentalRepository.save(createdRental);
 	}
 	
