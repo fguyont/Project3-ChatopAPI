@@ -15,6 +15,9 @@ import com.openclassrooms.chatopapi.dto.UserDto;
 import com.openclassrooms.chatopapi.model.User;
 import com.openclassrooms.chatopapi.service.UserService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
@@ -25,6 +28,10 @@ public class UserController {
 	@Autowired
 	private ModelMapper modelMapper;
 	
+	@Operation(summary = "Gets user information")
+	@ApiResponse(responseCode = "200", description = "User information loaded")
+	@ApiResponse(responseCode = "404", description = "User not found")
+	@ApiResponse(responseCode = "503", description = "Service unavailable")
 	@GetMapping("/{id}")
 	public ResponseEntity<?> getUserById(@PathVariable Long id) {
 		Optional<User> user;
