@@ -1,5 +1,6 @@
 package com.openclassrooms.chatopapi.controller;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -27,27 +28,26 @@ public class MessagesController {
 	@Autowired
 	private ModelMapper modelMapper;
 
-	@Operation(summary = "Creates a new message")
+	@Operation(security = { @SecurityRequirement(name = "bearer-key") }, summary = "Creates a new message")
 	@ApiResponse(responseCode = "200", description = "Message created")
 	@ApiResponse(responseCode = "400", description = "Invalid message value or invalid id value")
 	@ApiResponse(responseCode = "503", description = "Service unavailable")
 	@PostMapping("")
-	public ResponseEntity<?> createMessage(@RequestBody MessageRequest messageRequest) {
+	public ResponseEntity<MessageResponse> createMessage(@RequestBody MessageRequest messageRequest) {
 
 		Message message = modelMapper.map(messageRequest, Message.class);
 
 		try {
 			messagesService.createMessage(message);
 		} catch (IllegalArgumentException ex) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body("400 error: Invalid message value or invalid id value");
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		} catch (Exception ex) {
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("503 error: Service unavailable");
+			return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
 		}
 
 		MessageResponse messageResponse = new MessageResponse();
 		messageResponse.setMessage("Message created");
 		
-		return ResponseEntity.ok(messageResponse);
+		return ResponseEntity.status(HttpStatus.OK).body(messageResponse);
 	}
 }

@@ -35,7 +35,7 @@ public class AuthController {
 	@ApiResponse(responseCode = "200", description = "User is logged")
 	@ApiResponse(responseCode = "400", description = "Invalid input or email not found")
 	@ApiResponse(responseCode = "503", description = "Service unavailable")
-	public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+	public ResponseEntity<AuthSuccess> login(@RequestBody LoginRequest loginRequest) {
 		String token;
 
 		try {
@@ -43,21 +43,21 @@ public class AuthController {
 		}
 
 		catch (IllegalArgumentException ex) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("400 error: Invalid input or email not found");
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 
 		catch (AuthenticationCredentialsNotFoundException ex) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("401 error: Authentication not permitted");
+			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 		}
 
 		catch (Exception ex) {
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("503 error: Service unavailable");
+			return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
 		}
 
 		AuthSuccess authSuccess = new AuthSuccess();
 		authSuccess.setToken(token);
 
-		return ResponseEntity.ok(authSuccess);
+		return ResponseEntity.status(HttpStatus.OK).body(authSuccess);
 	}
 
 	@Operation(summary = "Registers a new user")
@@ -65,7 +65,7 @@ public class AuthController {
 	@ApiResponse(responseCode = "400", description = "Invalid input or already existing email")
 	@ApiResponse(responseCode = "503", description = "Service unavailable")
 	@PostMapping("/register")
-	public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest) {
+	public ResponseEntity<AuthSuccess> register(@RequestBody RegisterRequest registerRequest) {
 		String token;
 
 		try {
@@ -73,22 +73,21 @@ public class AuthController {
 		}
 
 		catch (IllegalArgumentException ex) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body("400 error: Invalid input or already existing email");
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 
 		catch (AuthenticationCredentialsNotFoundException ex) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("401 error: Authentication not permitted");
+			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 		}
 
 		catch (Exception ex) {
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("503 error: Service unavailable");
+			return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
 		}
 
 		AuthSuccess authSuccess = new AuthSuccess();
 		authSuccess.setToken(token);
 
-		return ResponseEntity.ok(authSuccess);
+		return ResponseEntity.status(HttpStatus.OK).body(authSuccess);
 	}
 
 	@Operation(summary = "Gets the connected user")
@@ -96,7 +95,7 @@ public class AuthController {
 	@ApiResponse(responseCode = "404", description = "User not found")
 	@ApiResponse(responseCode = "503", description = "Service unavailable")
 	@GetMapping("/me")
-	public ResponseEntity<?> getMe() {
+	public ResponseEntity<UserDto> getMe() {
 		Optional<User> user;
 
 		try {
@@ -104,14 +103,14 @@ public class AuthController {
 		} 
 		
 		catch (Exception ex) {
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("503 error: Service unavailable");
+			return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
 		}
 		
-		if (user == null) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("404 error: User not found");
+		if (user.isEmpty()) {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 		
 		UserDto userDTO = modelMapper.map(user, UserDto.class);
-		return ResponseEntity.ok(userDTO);
+		return ResponseEntity.status(HttpStatus.OK).body(userDTO);
 	}
 }

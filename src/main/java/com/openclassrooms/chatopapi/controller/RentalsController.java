@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -47,17 +48,17 @@ public class RentalsController {
 	@Autowired
 	private FileUpload fileUpload;
 
+	@Operation(security = { @SecurityRequirement(name = "bearer-key") }, summary = "Gets all rentals")
 	@GetMapping("")
-	@Operation(summary = "Gets all rentals")
 	@ApiResponse(responseCode = "200", description = "Rentals loaded")
 	@ApiResponse(responseCode = "503", description = "Service unavailable")
-	public ResponseEntity<?> getRentals() {
+	public ResponseEntity<RentalsResponse> getRentals() {
 
 		List<Rental> rentals;
 		try {
 			rentals = rentalsService.getRentals();
 		} catch (Exception ex) {
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("503 error: Service unavailable");
+			return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
 		}
 		RentalsResponse rentalsResponse = new RentalsResponse();
 		List<RentalDto> rentalsDto = new ArrayList<RentalDto>();
@@ -68,41 +69,41 @@ public class RentalsController {
 		}
 		rentalsResponse.setRentals(rentalsDto);
 
-		return ResponseEntity.ok(rentalsResponse);
+		return ResponseEntity.status(HttpStatus.OK).body(rentalsResponse);
 	}
 
 	@GetMapping("/{id}")
-	@Operation(summary = "Gets rental information")
+	@Operation(security = { @SecurityRequirement(name = "bearer-key") }, summary = "Gets rental information")
 	@ApiResponse(responseCode = "200", description = "Rental loaded")
 	@ApiResponse(responseCode = "400", description = "Invalid id")
 	@ApiResponse(responseCode = "404", description = "Rental not found")
 	@ApiResponse(responseCode = "503", description = "Service unavailable")
-	public ResponseEntity<?> getRentalById(@PathVariable Long id) {
+	public ResponseEntity<RentalDto> getRentalById(@PathVariable Long id) {
 		Optional<Rental> rental;
 
 		try {
 			rental = rentalsService.getRentalById(id);
 		} catch (IllegalArgumentException ex) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("400 error: Invalid id");
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		} catch (Exception ex) {
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("503 error: Service unavailable");
+			return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
 		}
 		RentalDto rentalDto = new RentalDto();
 
-		if (rental == null) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("404 error: Rental not found");
+		if (rental.isEmpty()) {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 
 		rentalDto = modelMapper.map(rental, RentalDto.class);
-		return ResponseEntity.ok(rentalDto);
+		return ResponseEntity.status(HttpStatus.OK).body(rentalDto);
 	}
 
 	@PostMapping
-	@Operation(summary = "Creates a new rental")
+	@Operation(security = { @SecurityRequirement(name = "bearer-key") }, summary = "Creates a new rental")
 	@ApiResponse(responseCode = "200", description = "Rental created")
 	@ApiResponse(responseCode = "400", description = "Invalid input or invalid file")
 	@ApiResponse(responseCode = "503", description = "Service unavailable")
-	public ResponseEntity<?> createRental(@RequestParam("name") String name, @RequestParam("surface") float surface,
+	public ResponseEntity<RentalResponse> createRental(@RequestParam("name") String name, @RequestParam("surface") float surface,
 			@RequestParam("price") float price, @RequestParam("picture") MultipartFile picture,
 			@RequestParam("description") String description) {
 
@@ -116,48 +117,44 @@ public class RentalsController {
 
 			pictureUrl = fileUpload.uploadFile(picture);
 			createdRental.setPicture(pictureUrl);
-			User me = authService.getMe().orElse(null);
-			createdRental.setOwner_id(me.getId());
-			rentalsService.createRental(createdRental);
-		} catch (IllegalArgumentException ex) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("400 error: Invalid input");
-		} catch (IOException ex) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("400 error: Invalid file");
-
+            authService.getMe().ifPresent(me -> createdRental.setOwner_id(me.getId()));
+            rentalsService.createRental(createdRental);
+		} catch (IllegalArgumentException | IOException ex) {
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		} catch (Exception ex) {
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("503 error: Service unavailable");
+			return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
 		}
 
 		RentalResponse rentalResponse = new RentalResponse();
 		rentalResponse.setMessage("Rental created");
 
-		return ResponseEntity.ok(rentalResponse);
+		return ResponseEntity.status(HttpStatus.OK).body(rentalResponse);
 	}
 
 	@PutMapping("/{id}")
-	@Operation(summary = "Updates rental information")
+	@Operation(security = { @SecurityRequirement(name = "bearer-key") }, summary = "Updates rental information")
 	@ApiResponse(responseCode = "200", description = "Rental updated")
 	@ApiResponse(responseCode = "400", description = "Invalid input for update")
 	@ApiResponse(responseCode = "404", description = "Rental not found")
 	@ApiResponse(responseCode = "503", description = "Service unavailable")
-	public ResponseEntity<?> updateRental(@PathVariable Long id, @RequestParam("name") String name,
+	public ResponseEntity<RentalResponse> updateRental(@PathVariable Long id, @RequestParam("name") String name,
 			@RequestParam("surface") float surface, @RequestParam("price") float price,
 			@RequestParam("description") String description) {
 		Rental updatedRental = new Rental(id, name, surface, price, description);
 		try {
 			rentalsService.updateRental(id, updatedRental);
 		} catch (NotFoundException ex) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("404 error: Rental not found");
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
 		} catch (IllegalArgumentException ex) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("400 error: Invalid input for update");
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
 		} catch (Exception ex) {
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("503 error: Service unavailable");
+			return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
 		}
 
 		RentalResponse rentalResponse = new RentalResponse();
 		rentalResponse.setMessage("Rental updated!");
-		return ResponseEntity.ok(rentalResponse);
+		return ResponseEntity.status(HttpStatus.OK).body(rentalResponse);
 	}
 }

@@ -33,13 +33,6 @@ public class AuthServiceImpl implements AuthService {
 	@Autowired
 	private ModelMapper modelMapper;
 
-	public AuthServiceImpl(JwtTokenProvider jwtTokenProvider, UserRepository userRepository,
-			PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
-		this.authenticationManager = authenticationManager;
-		this.userRepository = userRepository;
-		this.jwtTokenProvider = jwtTokenProvider;
-	}
-
 	@Autowired
 	public BCryptPasswordEncoder bCryptPasswordEncoder() {
 		return new BCryptPasswordEncoder();

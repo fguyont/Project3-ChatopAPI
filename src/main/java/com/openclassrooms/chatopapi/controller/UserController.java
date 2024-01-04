@@ -2,6 +2,7 @@ package com.openclassrooms.chatopapi.controller;
 
 import java.util.Optional;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -28,28 +29,28 @@ public class UserController {
 	@Autowired
 	private ModelMapper modelMapper;
 	
-	@Operation(summary = "Gets user information")
+	@Operation(security = { @SecurityRequirement(name = "bearer-key") }, summary = "Gets user information")
 	@ApiResponse(responseCode = "200", description = "User information loaded")
 	@ApiResponse(responseCode = "404", description = "User not found")
 	@ApiResponse(responseCode = "503", description = "Service unavailable")
 	@GetMapping("/{id}")
-	public ResponseEntity<?> getUserById(@PathVariable Long id) {
+	public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
 		Optional<User> user;
 
 		try {
 			user = userService.getUserById(id);
 		} catch (IllegalArgumentException ex) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("400 error: Invalid id");
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		} catch (Exception ex) {
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("503 error: Service unavailable");
+			return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
 		}
 		UserDto userDto = new UserDto();
 
-		if (user == null) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("404 error: User not found");
+		if (user.isEmpty()) {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 
 		userDto = modelMapper.map(user, UserDto.class);
-		return ResponseEntity.ok(userDto);
+		return ResponseEntity.status(HttpStatus.OK).body(userDto);
 	}
 }
