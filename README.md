@@ -43,7 +43,7 @@ This application consists of a back-end project and a front-end project.
 ## Application run
 - Run the back-end project
 - You can now use the back-end project with Postman or with Swagger http://localhost:3001/swagger-ui/index.html
-- To use the application with interface, open a terminal, go to the front-end project directory and enter npm start and navigate to `http://localhost:4200/`.
+- To use the application with an user interface, open a terminal, go to the front-end project directory, enter npm start and navigate to `http://localhost:4200/`.
 
 ## Author
 
