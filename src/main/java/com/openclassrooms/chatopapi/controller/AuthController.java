@@ -1,5 +1,6 @@
 package com.openclassrooms.chatopapi.controller;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.AllArgsConstructor;
 import com.openclassrooms.chatopapi.dto.AuthSuccess;
 import com.openclassrooms.chatopapi.dto.LoginRequest;
@@ -90,7 +91,7 @@ public class AuthController {
 		return ResponseEntity.status(HttpStatus.OK).body(authSuccess);
 	}
 
-	@Operation(summary = "Gets the connected user")
+	@Operation(security = { @SecurityRequirement(name = "bearer-key") }, summary = "Gets the connected user")
 	@ApiResponse(responseCode = "200", description = "User is found")
 	@ApiResponse(responseCode = "404", description = "User not found")
 	@ApiResponse(responseCode = "503", description = "Service unavailable")
